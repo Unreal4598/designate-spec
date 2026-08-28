@@ -66,6 +66,10 @@ Failure modes are verdicts, never crashes. The [reference implementation](refere
 python reference/designate_ref.py vectors vectors
 ```
 
-## 7. License
+## 7. Validator
+
+[`validator/v1/`](validator/v1/) is the free web validator/viewer — a static, dependency-vendored page (no backend, no accounts, no telemetry): drop a `.designate` file and it parses **in your browser**, shows per-part checksum verdicts, party rounds, unknown-extension notices, and offers a rendered-PDF fallback for anyone who just wants to read the round. Its core (`designate-core.mjs`) is the third independent implementation of the format, pinned to the same vectors in CI. Hosted at `verify.designate.legal`.
+
+## 8. License
 
 Reference implementation and schema: MIT. The specification text may be reproduced with attribution.

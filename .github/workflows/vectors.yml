@@ -8,3 +8,6 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: python reference/designate_ref.py vectors vectors
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: node validator/run_vectors.mjs vectors
