@@ -1,0 +1,6 @@
+{
+  "readable": true,
+  "intact": true,
+  "docProblems": [],
+  "note": "Unknown keys under extensions are valid and non-fatal (3.2.a.4)."
+}

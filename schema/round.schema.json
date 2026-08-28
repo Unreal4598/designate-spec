@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://spec.designate.legal/v1/round.schema.json",
+  "title": ".designate v1 round document",
+  "description": "The round.json inside a designate/1 round package. Top-level unknown properties are permitted and MUST be ignored by consumers (forward compatibility); machine-readable vendor extensions belong under `extensions`.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["kind", "round", "transcripts", "designations", "verification"],
+  "properties": {
+    "kind": { "const": "designate/1 round" },
+    "caseName": { "type": "string" },
+    "matterNumber": { "type": "string" },
+    "round": {
+      "type": "object",
+      "required": ["id", "direction", "servedAt", "sourceKind"],
+      "properties": {
+        "id": { "type": "string" },
+        "direction": { "enum": ["inbound", "outbound"] },
+        "servedAt": { "type": "string", "format": "date-time" },
+        "sourceKind": { "type": "string" },
+        "prevRoundId": { "type": ["string", "null"] }
+      }
+    },
+    "transcripts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["depositionId", "title", "deponent", "versionId", "contentSha256", "lineage", "timing"],
+        "properties": {
+          "depositionId": { "type": "string" },
+          "title": { "type": "string" },
+          "deponent": { "type": "string" },
+          "versionId": { "type": "string" },
+          "versionNo": { "type": "integer" },
+          "filename": { "type": "string" },
+          "contentSha256": { "type": "string" },
+          "pageCount": { "type": ["integer", "null"] },
+          "lineCount": { "type": ["integer", "null"] },
+          "lineage": {
+            "type": "array",
+            "description": "rough → final, ascending versionNo",
+            "items": {
+              "type": "object",
+              "required": ["versionId", "versionNo", "contentSha256"],
+              "properties": {
+                "versionId": { "type": "string" },
+                "versionNo": { "type": "integer" },
+                "filename": { "type": "string" },
+                "contentSha256": { "type": "string" }
+              }
+            }
+          },
+          "timing": {
+            "type": "object",
+            "required": ["source", "coveredLines", "totalLines", "uploads"],
+            "properties": {
+              "source": { "enum": ["uploaded", "aligned", "estimated"] },
+              "coveredLines": { "type": "integer" },
+              "totalLines": { "type": "integer" },
+              "uploads": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["filename", "contentSha256"],
+                  "properties": {
+                    "filename": { "type": "string" },
+                    "contentSha256": { "type": "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "designations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "depositionId", "party", "role", "cite", "startPage", "startLine", "endPage", "endLine"],
+        "properties": {
+          "id": { "type": "string" },
+          "depositionId": { "type": "string" },
+          "party": { "enum": ["plaintiff", "defense", "other"] },
+          "role": { "type": "string" },
+          "cite": { "type": "string", "minLength": 1, "description": "Qualified cite: page:line with word-anchor qualifiers when offsets are partial-line" },
+          "startPage": { "type": "integer" },
+          "startLine": { "type": "integer" },
+          "endPage": { "type": "integer" },
+          "endLine": { "type": "integer" },
+          "startOffset": { "type": ["integer", "null"], "description": "UTF-16 code-unit offset into the start line's text; null = whole line" },
+          "endOffset": { "type": ["integer", "null"] },
+          "excerpt": { "type": "string" },
+          "objectionBasis": { "type": "string" },
+          "objectionResponse": { "type": "string" },
+          "ruling": { "enum": ["", "reserved", "sustained", "overruled"] },
+          "counterTo": { "type": ["string", "null"] },
+          "replyTo": { "type": ["string", "null"] },
+          "filingId": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "filings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "ecfNo", "title"],
+        "properties": {
+          "id": { "type": "string" },
+          "ecfNo": { "type": "string" },
+          "title": { "type": "string" },
+          "side": { "type": "string" },
+          "kind": { "type": "string" }
+        }
+      }
+    },
+    "recipes": { "type": "array" },
+    "auditEvents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["action", "objectType", "objectId", "prevEventHash", "eventHash", "createdAt"],
+        "properties": {
+          "action": { "type": "string" },
+          "objectType": { "type": "string" },
+          "objectId": { "type": "string" },
+          "objectContentHash": { "type": "string" },
+          "prevEventHash": { "type": "string" },
+          "eventHash": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": ["manifest", "spec"],
+      "properties": {
+        "manifest": { "const": "sha256-per-part" },
+        "auditChain": { "type": "string" },
+        "spec": { "type": "string", "format": "uri" }
+      }
+    },
+    "extensions": {
+      "type": "object",
+      "description": "Forward-compatible vendor extension slot. Keys SHOULD be namespaced (vendor.example/field). Consumers MUST ignore unknown keys and SHOULD surface their presence as non-fatal."
+    }
+  }
+}

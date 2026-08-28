@@ -1,0 +1,8 @@
+{
+  "readable": true,
+  "intact": true,
+  "docProblems": [
+    "verification section missing"
+  ],
+  "note": "No verification section → doc problem."
+}

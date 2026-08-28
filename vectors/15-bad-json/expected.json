@@ -1,0 +1,8 @@
+{
+  "readable": true,
+  "intact": true,
+  "docProblems": [
+    "round.json is not valid JSON"
+  ],
+  "note": "Manifest verifies but round.json is not JSON → doc problems."
+}

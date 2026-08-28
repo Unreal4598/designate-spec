@@ -1,0 +1,8 @@
+{
+  "readable": true,
+  "intact": true,
+  "docProblems": [
+    "designations section missing"
+  ],
+  "note": "No designations section → doc problem."
+}

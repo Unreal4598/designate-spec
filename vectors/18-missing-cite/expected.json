@@ -1,0 +1,8 @@
+{
+  "readable": true,
+  "intact": true,
+  "docProblems": [
+    "designation seg-1 has no qualified cite"
+  ],
+  "note": "A designation without a qualified cite → doc problem."
+}

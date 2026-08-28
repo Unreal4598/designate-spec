@@ -1,0 +1,8 @@
+{
+  "readable": true,
+  "intact": true,
+  "docProblems": [
+    "kind must be \"designate/1 round\""
+  ],
+  "note": "kind string from another format → doc problem."
+}
