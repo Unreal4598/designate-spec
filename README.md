@@ -72,7 +72,7 @@ Failure modes are verdicts, never crashes. The [reference implementation](refere
 
 ## 6. Test vectors
 
-[`vectors/`](vectors/) contains ≥ 20 packages with pinned verdicts (`expected.json`), covering happy paths (minimal, full, multi-party, offsets, rulings, outbound, extensions, large) and failure paths (missing manifest, tampered part, missing/unlisted parts, non-zip, duplicate entry, CRC-32 mismatch, re-pointed central directory, bytes after the end record, malformed and non-conforming documents). Run them against any implementation:
+[`vectors/`](vectors/) contains ≥ 20 packages with pinned verdicts (`expected.json`), covering happy paths (minimal, full, multi-party, offsets, rulings, outbound, extensions, large) and failure paths (missing manifest, tampered part, missing/unlisted parts, non-zip, compressed entry, duplicate entry, CRC-32 mismatch, re-pointed central directory, bytes after the end record, malformed and non-conforming documents). Run them against any implementation:
 
 ```
 python reference/designate_ref.py vectors vectors
