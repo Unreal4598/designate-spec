@@ -6,7 +6,7 @@
 
 ## 1. Container
 
-A `.designate` file is an ordinary **ZIP archive** with every entry **STORED** (compression method 0, deterministic fixed timestamps). Compressed entries are non-conforming: the container is meant to be auditable with a hex editor, and stored bytes keep digests trivially recomputable. Alongside the served parts it always contains **`manifest.json`**:
+A `.designate` file is an ordinary **ZIP archive** with every entry **STORED** (compression method 0, deterministic fixed timestamps). The container is meant to be auditable with a hex editor, and stored bytes keep digests trivially recomputable. Alongside the served parts it always contains **`manifest.json`**:
 
 ```json
 {
@@ -17,6 +17,18 @@ A `.designate` file is an ordinary **ZIP archive** with every entry **STORED** (
   "parts": [ { "path": "round.json", "bytes": 1234, "sha256": "…" } ]
 }
 ```
+
+### Container rules (normative)
+
+A verifier hashes the bytes it walked; a general-purpose unzipper extracts by the central directory. The two MUST agree, or the verdict would describe different bytes than the recipient's `unzip -o` produced. A conforming package satisfies all of the following, and a conforming reader MUST refuse — not partially read — a package that violates any one of them:
+
+1. **Stored only.** Every entry uses compression method 0, and each local header's compressed and uncompressed sizes are equal.
+2. **Unique names.** No two entries share a name.
+3. **CRC-32 per entry.** Each entry's bytes MUST match the CRC-32 recorded in its local header.
+4. **Central directory mirrors the entries.** The central directory MUST list exactly the local headers walked, in order; each central entry's local-header offset, CRC-32, sizes and name MUST match the local header it points at.
+5. **End record closes the file.** The end-of-central-directory record MUST count exactly the entries walked, MUST point at the central directory (offset and size), and MUST be the last thing in the file — nothing follows it and its comment.
+
+Refusal is a verdict, not a crash: a non-conforming container reports `readable: false, intact: false` with no document problems (vectors 14 and 23–26). These packages were never valid `.designate` files; the rules name what a STORE-only zip was always assumed to be.
 
 **Verification is content-addressed:** recompute each part's SHA-256 and compare against the manifest. A part whose digest differs is *modified*; a listed part absent from the archive is *missing*; an archive entry the manifest never listed is *unlisted*. Any of the three means the package is **not intact**. Manifest `parts` are sorted by `path` at build time; verification is order-insensitive.
 
@@ -52,7 +64,7 @@ See [`canonicalization.md`](canonicalization.md). Summary: `round.json` is seria
 ## 5. Verification rules (normative)
 
 A conforming verifier reports, in order:
-1. **readable** — the archive parses as a STORE-only zip and `manifest.json` parses with `format: "designate/1"`.
+1. **readable** — the archive is a conforming container (§1 container rules) and `manifest.json` parses with `format: "designate/1"`.
 2. **intact** — every listed part present with a matching SHA-256, and no unlisted parts.
 3. **document problems** — `round.json` present, valid JSON, correct `kind`, required sections present (`round`, `transcripts`, `designations`, `verification`), every designation carrying a non-empty qualified cite, `extensions` an object when present.
 
@@ -60,7 +72,7 @@ Failure modes are verdicts, never crashes. The [reference implementation](refere
 
 ## 6. Test vectors
 
-[`vectors/`](vectors/) contains ≥ 20 packages with pinned verdicts (`expected.json`), covering happy paths (minimal, full, multi-party, offsets, rulings, outbound, extensions, large) and failure paths (missing manifest, tampered part, missing/unlisted parts, compressed container, non-zip, malformed and non-conforming documents). Run them against any implementation:
+[`vectors/`](vectors/) contains ≥ 20 packages with pinned verdicts (`expected.json`), covering happy paths (minimal, full, multi-party, offsets, rulings, outbound, extensions, large) and failure paths (missing manifest, tampered part, missing/unlisted parts, non-zip, duplicate entry, CRC-32 mismatch, re-pointed central directory, bytes after the end record, malformed and non-conforming documents). Run them against any implementation:
 
 ```
 python reference/designate_ref.py vectors vectors

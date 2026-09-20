@@ -29,6 +29,7 @@ import hashlib
 import json
 import struct
 import sys
+import zlib
 from pathlib import Path
 
 FORMAT_VERSION = "designate/1"
@@ -36,32 +37,80 @@ ROUND_DOCUMENT_KIND = "designate/1 round"
 MANIFEST_PATH = "manifest.json"
 
 # --------------------------------------------------------------------------
-# Container: STORE-only zip reader (local file headers walked front to back).
-# Compressed entries are refused — the container is meant to be auditable
-# with a hex editor, and stored bytes keep digests trivially recomputable.
+# Container: STORE-only zip reader. Local file headers are walked front to
+# back, then the central directory and end record are cross-checked against
+# them (spec README §1, container rules). Refused (None): compressed entries,
+# duplicate names, a CRC-32 that does not match its bytes, a central directory
+# that does not list exactly the walked entries in order, an end record whose
+# counts/offset/size disagree, and any bytes after it — each is a container
+# where `unzip -o` could extract different bytes than the ones hashed here.
 # --------------------------------------------------------------------------
 
 
 def unzip_store(data: bytes) -> list[tuple[str, bytes]] | None:
     parts: list[tuple[str, bytes]] = []
+    seen: set[str] = set()
+    local_offsets: list[int] = []
     at = 0
     while at + 4 <= len(data) and data[at : at + 4] == b"PK\x03\x04":
         if at + 30 > len(data):
             return None
-        (method,) = struct.unpack_from("<H", data, at + 8)
-        (size,) = struct.unpack_from("<I", data, at + 18)
-        (name_len,) = struct.unpack_from("<H", data, at + 26)
-        (extra_len,) = struct.unpack_from("<H", data, at + 28)
-        if method != 0:
-            return None  # compressed entry: not a conforming container
+        local_offsets.append(at)
+        # method, mtime, mdate, crc32, compressed size, uncompressed size, name len, extra len
+        method, _, _, crc, size, full_size, name_len, extra_len = struct.unpack_from("<HHHIIIHH", data, at + 8)
+        if method != 0 or full_size != size:
+            return None  # compressed entry (or sizes disagree): not a conforming container
         name_start = at + 30
         data_start = name_start + name_len + extra_len
         if data_start + size > len(data):
             return None
         name = data[name_start : name_start + name_len].decode("utf-8", "replace")
-        parts.append((name, data[data_start : data_start + size]))
+        payload = data[data_start : data_start + size]
+        if name in seen or zlib.crc32(payload) != crc:
+            return None  # duplicate name, or bytes that do not match their CRC-32
+        seen.add(name)
+        parts.append((name, payload))
         at = data_start + size
-    return parts if parts else None
+    if not parts:
+        return None
+
+    # Central directory: one header per walked entry, in order, pointing at the
+    # local header walked with the same name, CRC-32 and sizes.
+    cd_start = at
+    listed = 0
+    while at + 4 <= len(data) and data[at : at + 4] == b"PK\x01\x02":
+        if at + 46 > len(data) or listed >= len(parts):
+            return None
+        name, payload = parts[listed]
+        # crc32, compressed size, uncompressed size, name len, extra len, comment len
+        crc, size, full_size, name_len, extra_len, comment_len = struct.unpack_from("<IIIHHH", data, at + 16)
+        (offset,) = struct.unpack_from("<I", data, at + 42)
+        if at + 46 + name_len > len(data):
+            return None
+        if offset != local_offsets[listed] or crc != zlib.crc32(payload):
+            return None
+        if size != len(payload) or full_size != len(payload):
+            return None
+        if data[at + 46 : at + 46 + name_len].decode("utf-8", "replace") != name:
+            return None
+        at += 46 + name_len + extra_len + comment_len
+        listed += 1
+    if listed != len(parts):
+        return None
+
+    # End of central directory: points at the CD just validated, counts exactly
+    # the entries walked, and is the last thing in the file (comment included).
+    if at + 22 > len(data) or data[at : at + 4] != b"PK\x05\x06":
+        return None
+    # entries on this disk, entries total, cd size, cd offset, comment len
+    count, total, cd_size, cd_offset, comment_len = struct.unpack_from("<HHIIH", data, at + 8)
+    if cd_offset != cd_start or cd_size != at - cd_start:
+        return None
+    if count != len(parts) or total != len(parts):
+        return None
+    if at + 22 + comment_len != len(data):
+        return None
+    return parts
 
 
 # --------------------------------------------------------------------------

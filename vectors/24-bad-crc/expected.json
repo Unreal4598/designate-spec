@@ -1,0 +1,6 @@
+{
+  "readable": false,
+  "intact": false,
+  "docProblems": [],
+  "note": "A payload byte flipped without updating the entry's CRC-32 → container refused."
+}

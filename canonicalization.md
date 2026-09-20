@@ -32,3 +32,13 @@ parts therefore produce a byte-identical archive. `producedAt` in the
 manifest is an **input** supplied by the producer, never sampled from the
 clock at serialization time — reproducing a package with the same inputs
 yields the same bytes.
+
+Determinism also means a package has exactly one reading. A producer MUST
+write entries with unique names, a correct CRC-32 per entry, a central
+directory that lists the local headers exactly and in order, and an
+end-of-central-directory record that closes the file (README §1, container
+rules). A reader MUST refuse a package where a central-directory-driven
+extractor could produce different bytes than a front-to-back walk of the
+local headers: duplicate names, a CRC-32 mismatch, a central entry pointing
+at another entry's header, counts or offsets that disagree, or bytes after
+the end record. Such a package has no canonical content to hash.
