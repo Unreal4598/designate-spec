@@ -1,0 +1,6 @@
+{
+  "readable": false,
+  "intact": false,
+  "docProblems": [],
+  "note": "manifest.json's central-directory entry re-pointed at round.json's local header → container refused."
+}

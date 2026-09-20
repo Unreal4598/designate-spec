@@ -1,0 +1,6 @@
+{
+  "readable": false,
+  "intact": false,
+  "docProblems": [],
+  "note": "First entry's local header says method 8 (deflate) → container refused (STORE-only, README §1 rule 1)."
+}
